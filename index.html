@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E🐧%3C/text%3E%3C/svg%3E">
+<title>Linux i webbläsaren – v86</title>
+<link rel="stylesheet" href="vendor/xterm.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>🐧 Linux i webbläsaren</h1>
+  <span class="sub">x86-emulator (v86, WebAssembly) – körs helt lokalt i din webbläsare</span>
+</header>
+
+<section class="panel controls">
+  <label>System
+    <select id="profile"></select>
+  </label>
+  <label>Nätverk
+    <select id="network">
+      <option value="">Av (offline)</option>
+      <option value="wss://relay.widgetry.org/" selected>Publik relay (wss://relay.widgetry.org/)</option>
+      <option value="fetch">Fetch (endast HTTP via webbläsaren)</option>
+      <option value="custom">Egen adress…</option>
+    </select>
+  </label>
+  <input id="customNet" type="text" placeholder="t.ex. wisp://localhost:6001/ eller wss://…" hidden>
+  <label>RAM
+    <select id="memory">
+      <option value="128">128 MB</option>
+      <option value="256">256 MB</option>
+      <option value="512" selected>512 MB</option>
+      <option value="1024">1024 MB</option>
+    </select>
+  </label>
+  <div class="btns">
+    <button id="btnStart" class="primary">▶ Starta</button>
+    <button id="btnStop" disabled>⏸ Stoppa</button>
+    <button id="btnRestart" disabled>↻ Starta om</button>
+    <button id="btnSave" disabled>💾 Spara läge</button>
+    <button id="btnRestore">📂 Återställ läge</button>
+    <input id="stateFile" type="file" accept=".bin,.v86state" hidden>
+  </div>
+</section>
+
+<div id="status" class="status"><span class="dot"></span><span id="statusText">Redo. Välj system och tryck på Starta.</span></div>
+<div class="progress"><div id="progressBar"></div></div>
+<p id="profileInfo" class="info"></p>
+
+<main>
+  <section class="panel term">
+    <div class="ptitle">Seriell terminal <small>(klicka och skriv)</small></div>
+    <div id="terminal"></div>
+    <div class="paste">
+      <textarea id="pasteText" rows="2" placeholder="Klistra in text/kommandon här och tryck på Skicka (Ctrl+Enter)…"></textarea>
+      <button id="btnPaste">Skicka till terminalen</button>
+    </div>
+  </section>
+  <section class="panel vga">
+    <div class="ptitle">Skärm (VGA) <small>(klicka för tangentbord)</small></div>
+    <div id="screen_container">
+      <div style="white-space: pre; font: 14px monospace; line-height: 14px"></div>
+      <canvas style="display: none"></canvas>
+    </div>
+  </section>
+</main>
+
+<footer>
+  Byggd med <a href="https://github.com/copy/v86" target="_blank" rel="noopener">v86</a> och
+  <a href="https://xtermjs.org" target="_blank" rel="noopener">xterm.js</a>.
+  Alla filer finns lokalt – appen fungerar offline (förutom nätverket i gästen).
+</footer>
+
+<script src="vendor/xterm.js"></script>
+<script src="vendor/addon-fit.js"></script>
+<script src="lib/libv86.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
