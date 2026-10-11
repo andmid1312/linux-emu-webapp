@@ -1,0 +1,45 @@
+name: Fetch binary assets
+
+# The site's binary files (WASM, BIOS, Linux images) are fetched from their
+# official upstream sources, verified with SHA-256 and committed to main.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download and verify
+        run: |
+          set -euo pipefail
+          mkdir -p lib bios images
+          get() { # url dest sha256
+            if [ -f "$2" ] && echo "$3  $2" | sha256sum -c --quiet; then echo "have $2"; return; fi
+            curl -fsSL --retry 5 -o "$2" "$1"
+            echo "$3  $2" | sha256sum -c
+          }
+          get https://cdn.jsdelivr.net/npm/v86@0.5.471/build/v86.wasm lib/v86.wasm 2fc5609ae837fcbc77147155de6f1014677ecab5369f5584ebc670e9d56e6510
+          get https://raw.githubusercontent.com/copy/v86/master/bios/seabios.bin bios/seabios.bin 73e3f359102e3a9982c35fce98eb7cd08f18303ac7f1ba6ebfbe6cdc1c244d98
+          get https://copy.sh/v86/bios/vgabios.bin bios/vgabios.bin a4bc0d80cc3ca028c73dafa8fee396b8d054ce87ebd8abfbd31b06b437607880
+          get https://i.copy.sh/buildroot-bzimage68.bin images/buildroot-bzimage68.bin 507a759c70ab7a490a233be454d0b5b88bc667956a410b531cb4edc091e2eb1c
+          get https://i.copy.sh/linux4.iso images/linux4.iso a8ea434ab3b177c55f01275dcc1d35f52cfbee9bd44a32e74765c975b58bcc73
+          get https://dl-cdn.alpinelinux.org/alpine/v3.24/releases/x86/alpine-virt-3.24.2-x86.iso images/alpine-virt-3.24.2-x86.iso 62e752e0f674b1537a7fc38d9c3e6eab9644ae93e8610efb64756a00e7592a10
+          tmp=$(mktemp -d)
+          7z x -y -o"$tmp" images/alpine-virt-3.24.2-x86.iso boot/vmlinuz-virt boot/initramfs-virt >/dev/null
+          cp "$tmp/boot/vmlinuz-virt" "$tmp/boot/initramfs-virt" images/
+          echo "95c7b7680a8e57707ce383d7908a322d6b6e2cca52e312c915fa8fb155e76630  images/vmlinuz-virt" | sha256sum -c
+          echo "100a80ca2beece44575c25bf7d8c4cd775b10cbf045f520d533355289409c73f  images/initramfs-virt" | sha256sum -c
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add lib bios images
+          if git diff --cached --quiet; then echo "nothing to commit"; exit 0; fi
+          git commit -m "Add binary assets (v86 wasm, BIOS, Linux images) from upstream, sha256-verified"
+          git push
